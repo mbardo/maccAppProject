@@ -46,8 +46,8 @@ class HandLandmarkerHelper(
     }
 
 
-    fun detectLiveStream(imageProxy: ImageProxy, isFrontCamera: Boolean) {
-        val mpImage = imageProxy.toMPImage(isFrontCamera)
+    fun detectLiveStream(imageProxy: ImageProxy) {
+        val mpImage = imageProxy.toMPImage()
         handLandmarker?.detectAsync(mpImage, SystemClock.uptimeMillis())
         imageProxy.close()
     }
@@ -70,7 +70,7 @@ class HandLandmarkerHelper(
 }
 
 // Extension function to convert ImageProxy to MPImage
-fun ImageProxy.toMPImage(isFrontCamera: Boolean): MPImage {
+fun ImageProxy.toMPImage(): MPImage {
     val bitmap = Bitmap.createBitmap(this.width, this.height, Bitmap.Config.ARGB_8888)
     val plane = this.planes[0]
     val buffer = plane.buffer
@@ -86,16 +86,6 @@ fun ImageProxy.toMPImage(isFrontCamera: Boolean): MPImage {
     val matrix = Matrix().apply {
         // Rotate the frame received from the camera to be in the same direction as it'll be shown
         postRotate(this@toMPImage.imageInfo.rotationDegrees.toFloat())
-
-        // flip image if user use front camera
-        if (isFrontCamera) {
-            postScale(
-                -1f,
-                1f,
-                this@toMPImage.width.toFloat(),
-                this@toMPImage.height.toFloat()
-            )
-        }
     }
     val rotatedBitmap = Bitmap.createBitmap(
         bitmap, 0, 0, bitmap.width, bitmap.height,

@@ -2,6 +2,9 @@ package com.example.maccappproject.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -9,82 +12,77 @@ import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.unit.dp
 import com.example.maccappproject.helpers.HandLandmarkerHelper
-import com.google.mediapipe.tasks.vision.core.RunningMode
-import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarker
 import kotlin.math.max
-import kotlin.math.min
 
 @Composable
 fun OverlayView(
     modifier: Modifier = Modifier,
     resultBundle: HandLandmarkerHelper.ResultBundle? = null,
-    runningMode: RunningMode = RunningMode.LIVE_STREAM,
-    isFrontCamera: Boolean = false
+    onClear: () -> Unit = {},
+    clearOverlay: Boolean = false
 ) {
-    val linePaint = Paint().apply {
-        color = Color.Green
-        strokeWidth = 8f
-        style = androidx.compose.ui.graphics.PaintingStyle.Stroke
-    }
     val pointPaint = Paint().apply {
         color = Color.Yellow
         strokeWidth = 8f
         style = androidx.compose.ui.graphics.PaintingStyle.Fill
     }
 
+    // Use remember to create a list that persists across recompositions
+    val pointList = remember { mutableStateListOf<Offset>() }
+
+    // Function to clear the list
+    fun clearPoints() {
+        pointList.clear()
+        onClear() // Invoke the callback
+    }
+
+    // Use LaunchedEffect to observe clearOverlay and clear the list
+    LaunchedEffect(clearOverlay) {
+        if (clearOverlay) {
+            clearPoints()
+        }
+    }
+
     Canvas(modifier = modifier) {
-        val canvasWidth = size.width
-        val canvasHeight = size.height
+        val imageHeight = resultBundle?.inputImageHeight ?: 0
+        val imageWidth = resultBundle?.inputImageWidth ?: 0
 
-        resultBundle?.let { handLandmarkerResult ->
-            val imageHeight = handLandmarkerResult.inputImageHeight
-            val imageWidth = handLandmarkerResult.inputImageWidth
+        val scaleFactor = if (imageWidth > 0 && imageHeight > 0) {
+            max(
+                size.width / imageWidth.toFloat(),
+                size.height / imageHeight.toFloat()
+            )
+        } else {
+            1f
+        }
 
-            val scaleFactor = when (runningMode) {
-                RunningMode.IMAGE,
-                RunningMode.VIDEO -> {
-                    min(canvasWidth / imageWidth, canvasHeight / imageHeight)
-                }
-                RunningMode.LIVE_STREAM -> {
-                    max(canvasWidth / imageWidth, canvasHeight / imageHeight)
-                }
-                else -> 1f
+        val offsetY = if (imageHeight > 0) {
+            (size.height - (imageHeight * scaleFactor)) / 2f
+        } else {
+            0f
+        }
+
+        drawIntoCanvas { canvas ->
+            // Draw all points in the list
+            pointList.forEach { point ->
+                canvas.drawCircle(
+                    point,
+                    5.dp.toPx(),
+                    pointPaint
+                )
             }
 
-            val offsetX = (canvasWidth - (imageWidth * scaleFactor)) / 2f
-            val offsetY = (canvasHeight - (imageHeight * scaleFactor)) / 2f
+            resultBundle?.let { handLandmarkerResult ->
+                handLandmarkerResult.results.firstOrNull()?.landmarks()?.firstOrNull()?.let { landmark ->
+                    val indexFingerTip = landmark.getOrNull(8)
 
-
-            drawIntoCanvas { canvas ->
-                for (landmark in handLandmarkerResult.results.first().landmarks()) {
-                    for (normalizedLandmark in landmark) {
-                        val x = normalizedLandmark.x() * imageWidth * scaleFactor + offsetX
+                    indexFingerTip?.let { normalizedLandmark ->
+                        val x = normalizedLandmark.x() * imageWidth * scaleFactor
                         val y = normalizedLandmark.y() * imageHeight * scaleFactor + offsetY
-                        val mirroredX = if (isFrontCamera) canvasWidth - x else x
-                        canvas.drawCircle(
-                            Offset(
-                                mirroredX,
-                                y
-                            ),
-                            5.dp.toPx(),
-                            pointPaint
-                        )
-                    }
+                        val currentPoint = Offset(x, y)
 
-                    HandLandmarker.HAND_CONNECTIONS.forEach {
-                        val startX = landmark[it!!.start()].x() * imageWidth * scaleFactor + offsetX
-                        val startY = landmark[it.start()].y() * imageHeight * scaleFactor + offsetY
-                        val endX = landmark[it.end()].x() * imageWidth * scaleFactor + offsetX
-                        val endY = landmark[it.end()].y() * imageHeight * scaleFactor + offsetY
-
-                        val mirroredStartX = if (isFrontCamera) canvasWidth - startX else startX
-                        val mirroredEndX = if (isFrontCamera) canvasWidth - endX else endX
-
-                        canvas.drawLine(
-                            Offset(mirroredStartX, startY),
-                            Offset(mirroredEndX, endY),
-                            linePaint
-                        )
+                        // Add the current point to the list
+                        pointList.add(currentPoint)
                     }
                 }
             }

@@ -24,7 +24,7 @@ import com.example.maccappproject.helpers.HandLandmarkerHelper
 fun DrawingScreen(navController: NavController) {
     val context = LocalContext.current
     var resultBundle by remember { mutableStateOf<HandLandmarkerHelper.ResultBundle?>(null) }
-    var isFrontCamera by remember { mutableStateOf(false) } // Track camera facing
+    var clearOverlay by remember { mutableStateOf(false) }
 
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -41,10 +41,14 @@ fun DrawingScreen(navController: NavController) {
                 modifier = Modifier.fillMaxSize(),
                 onHandLandmark = {
                     resultBundle = it
-                },
-                isFrontCamera = isFrontCamera
+                }
             )
-            OverlayView(modifier = Modifier.fillMaxSize(), resultBundle = resultBundle, isFrontCamera = isFrontCamera)
+            OverlayView(
+                modifier = Modifier.fillMaxSize(),
+                resultBundle = resultBundle,
+                onClear = { clearOverlay = false },
+                clearOverlay = clearOverlay // Pass clearOverlay state
+            )
         }
     } else {
         LaunchedEffect(Unit) {
@@ -64,7 +68,7 @@ fun DrawingScreen(navController: NavController) {
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Button(onClick = {
-                resultBundle = null
+                clearOverlay = true
             }) {
                 Text("Clear")
             }
@@ -73,11 +77,6 @@ fun DrawingScreen(navController: NavController) {
             }
             Button(onClick = { /* Handle Share Action */ }) {
                 Text("Share")
-            }
-            Button(onClick = {
-                isFrontCamera = !isFrontCamera
-            }) {
-                Text("Switch Camera")
             }
         }
     }
