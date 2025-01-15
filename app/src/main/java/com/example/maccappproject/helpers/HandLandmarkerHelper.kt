@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.os.SystemClock
+import android.util.Log
 import androidx.camera.core.ImageProxy
 import com.google.mediapipe.framework.image.BitmapImageBuilder
 import com.google.mediapipe.framework.image.MPImage
@@ -26,7 +27,18 @@ class HandLandmarkerHelper(
 
     private fun setupHandLandmarker() {
         val baseOptionsBuilder = BaseOptions.builder()
-        baseOptionsBuilder.setDelegate(Delegate.GPU)
+
+        // Attempt to use GPU delegate
+        var delegate = Delegate.GPU
+        try {
+            baseOptionsBuilder.setDelegate(delegate)
+            Log.d("HandLandmarkerHelper", "Attempting to use GPU delegate")
+        } catch (e: Exception) {
+            Log.e("HandLandmarkerHelper", "GPU delegate is not supported, falling back to CPU", e)
+            delegate = Delegate.CPU
+            baseOptionsBuilder.setDelegate(delegate)
+        }
+
         baseOptionsBuilder.setModelAssetPath("hand_landmarker.task")
 
         val optionsBuilder = HandLandmarker.HandLandmarkerOptions.builder()
@@ -43,6 +55,12 @@ class HandLandmarkerHelper(
             }
 
         handLandmarker = HandLandmarker.createFromOptions(context, optionsBuilder.build())
+
+        if(delegate == Delegate.GPU){
+            Log.d("HandLandmarkerHelper", "GPU delegate is being used")
+        } else {
+            Log.d("HandLandmarkerHelper", "CPU delegate is being used")
+        }
     }
 
 

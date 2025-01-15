@@ -9,8 +9,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.unit.dp
 import com.example.maccappproject.helpers.HandLandmarkerHelper
 import kotlin.math.max
 
@@ -19,12 +20,17 @@ fun OverlayView(
     modifier: Modifier = Modifier,
     resultBundle: HandLandmarkerHelper.ResultBundle? = null,
     onClear: () -> Unit = {},
-    clearOverlay: Boolean = false
+    clearOverlay: Boolean = false,
+    drawingColor: Color = Color.Yellow,
+    strokeSize: Float = 8f
 ) {
-    val pointPaint = Paint().apply {
-        color = Color.Yellow
-        strokeWidth = 8f
-        style = androidx.compose.ui.graphics.PaintingStyle.Fill
+    val pointPaint = remember(drawingColor, strokeSize) {
+        Paint().apply {
+            color = drawingColor
+            strokeWidth = strokeSize
+            strokeCap = StrokeCap.Round
+            strokeJoin = StrokeJoin.Round
+        }
     }
 
     // Use remember to create a list that persists across recompositions
@@ -63,15 +69,7 @@ fun OverlayView(
         }
 
         drawIntoCanvas { canvas ->
-            // Draw all points in the list
-            pointList.forEach { point ->
-                canvas.drawCircle(
-                    point,
-                    5.dp.toPx(),
-                    pointPaint
-                )
-            }
-
+            // Add new point to pointList
             resultBundle?.let { handLandmarkerResult ->
                 handLandmarkerResult.results.firstOrNull()?.landmarks()?.firstOrNull()?.let { landmark ->
                     val indexFingerTip = landmark.getOrNull(8)
@@ -85,6 +83,17 @@ fun OverlayView(
                         pointList.add(currentPoint)
                     }
                 }
+            }
+
+            // Draw lines connecting the points
+            for (i in 0 until pointList.size - 1) {
+                val startPoint = pointList[i]
+                val endPoint = pointList[i + 1]
+                canvas.drawLine(
+                    p1 = startPoint,
+                    p2 = endPoint,
+                    paint = pointPaint
+                )
             }
         }
     }
