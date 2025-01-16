@@ -1,11 +1,16 @@
 import com.android.build.gradle.internal.tasks.factory.dependsOn
 import de.undercouch.gradle.tasks.download.Download
 
+
+
+
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("de.undercouch.download")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -63,6 +68,20 @@ tasks.register<Download>("downloadTaskFile") {
 project.tasks.preBuild.dependsOn("downloadTaskFile")
 
 dependencies {
+    // Firebase
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx")
+//    implementation("com.google.firebase:firebase-common-ktx")
+    implementation("com.google.firebase:firebase-storage-ktx")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+
+    // Material Design
+    implementation("com.google.android.material:material:1.11.0")
+
+    // Navigation Components
+    implementation("androidx.navigation:navigation-fragment-ktx:2.7.6")
+    implementation("androidx.navigation:navigation-ui-ktx:2.7.6")
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -72,6 +91,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+//    implementation(libs.firebase.storage.ktx)
     testImplementation(libs.junit)
     implementation(libs.androidx.navigation.compose)
 
@@ -100,4 +120,6 @@ dependencies {
     // Debug dependencies
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    
+    
 }
