@@ -86,9 +86,9 @@ fun DrawingScreen(navController: NavController) {
                     .align(androidx.compose.ui.Alignment.BottomCenter),
                 verticalArrangement = Arrangement.Bottom
             ) {
+                // In your Row of buttons, replace the existing buttons with:
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     Button(onClick = {
@@ -96,6 +96,7 @@ fun DrawingScreen(navController: NavController) {
                     }) {
                         Text("Clear")
                     }
+
                     Button(
                         onClick = {
                             scope.launch {
@@ -124,33 +125,18 @@ fun DrawingScreen(navController: NavController) {
                                     val canvas = Canvas(bitmap)
                                     composableView.draw(canvas)
 
-                                    // Save to Firebase Storage
-                                    val drawingId = UUID.randomUUID().toString()
-                                    val storageRef = storage.reference
-                                        .child("drawings/${Firebase.auth.currentUser?.uid}/$drawingId.png")
-
-                                    val baos = ByteArrayOutputStream()
-                                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos)
-                                    val data = baos.toByteArray()
-
-                                    storageRef.putBytes(data).await()
-                                    val downloadUrl = storageRef.downloadUrl.await()
-
-                                    // Save metadata to Firestore
-                                    firestore.collection("drawings")
-                                        .add(hashMapOf(
-                                            "userId" to Firebase.auth.currentUser?.uid,
-                                            "drawingId" to drawingId,
-                                            "url" to downloadUrl.toString(),
-                                            "createdAt" to com.google.firebase.Timestamp.now(),
-                                            "color" to drawingColor.toString(),
-                                            "strokeSize" to strokeSize
-                                        )).await()
-
-                                    Toast.makeText(context, "Drawing saved successfully!", Toast.LENGTH_SHORT).show()
-                                    navController.navigate(Screen.GALLERY)
+                                    FirebaseManager.saveDrawing(
+                                        bitmap = bitmap,
+                                        color = drawingColor.toString(),
+                                        strokeSize = strokeSize
+                                    ).onSuccess {
+                                        Toast.makeText(context, "Drawing saved successfully!", Toast.LENGTH_SHORT).show()
+                                        navController.navigate(Screen.GALLERY)
+                                    }.onFailure { e ->
+                                        Toast.makeText(context, "Failed to save drawing: ${e.message}", Toast.LENGTH_SHORT).show()
+                                    }
                                 } catch (e: Exception) {
-                                    Toast.makeText(context, "Failed to save drawing: ${e.message}", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Failed to capture drawing: ${e.message}", Toast.LENGTH_SHORT).show()
                                 } finally {
                                     isSaving = false
                                 }
@@ -168,26 +154,16 @@ fun DrawingScreen(navController: NavController) {
                         }
                     }
 
-                    // Show loading overlay when saving
-                    if (isSaving) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
-                        }
-                    }
-                }
                     Button(onClick = { /* Handle Share Action */ }) {
                         Text("Share")
                     }
+
                     Button(onClick = {
-                        navController.navigate("home")
+                        navController.navigate(Screen.HOME)
                     }) {
                         Text("Home")
                     }
+                }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(
