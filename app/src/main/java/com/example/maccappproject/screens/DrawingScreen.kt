@@ -21,39 +21,26 @@ import com.example.maccappproject.helpers.HandLandmarkerHelper
 import androidx.compose.material3.Slider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import android.graphics.Bitmap
-import android.view.ViewGroup
-import android.view.View
-import androidx.compose.ui.platform.ComposeView
-import com.google.firebase.storage.ktx.storage
-import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.ktx.Firebase
-import kotlinx.coroutines.launch
-import android.graphics.Canvas
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import com.example.maccappproject.navigation.Screen
-import com.google.firebase.auth.ktx.auth
-import kotlinx.coroutines.tasks.await
-import java.io.ByteArrayOutputStream
-import java.util.UUID
+import kotlinx.coroutines.launch
 
 @Composable
 fun DrawingScreen(navController: NavController) {
+    // 1. State Variables
     val context = LocalContext.current
     var resultBundle by remember { mutableStateOf<HandLandmarkerHelper.ResultBundle?>(null) }
     var clearOverlay by remember { mutableStateOf(false) }
     var drawingColor by remember { mutableStateOf(Color.Yellow) }
     var strokeSize by remember { mutableFloatStateOf(8f) }
     var isSaving by remember { mutableStateOf(false) }
+    var save by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    val storage = Firebase.storage
-    val firestore = Firebase.firestore
 
-
-
+    // 2. Camera Permission
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { isGranted ->
@@ -63,30 +50,42 @@ fun DrawingScreen(navController: NavController) {
         }
     )
 
+    // 3. Camera Permission Check and UI Setup
     if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
         Box(modifier = Modifier.fillMaxSize()) {
+            // 4. Camera View
             CameraView(
                 modifier = Modifier.fillMaxSize(),
                 onHandLandmark = {
                     resultBundle = it
                 }
             )
+            // 5. Overlay View with Size Tracking
             OverlayView(
                 modifier = Modifier.fillMaxSize(),
                 resultBundle = resultBundle,
                 onClear = { clearOverlay = false },
                 clearOverlay = clearOverlay,
                 drawingColor = drawingColor,
-                strokeSize = strokeSize
+                strokeSize = strokeSize,
+                save = save,
+                onSaveComplete = {
+                    scope.launch {
+                        isSaving = false
+                        save = false
+                        navController.navigate(Screen.GALLERY)
+                    }
+                }
             )
+            // 6. Bottom Controls, Color Selector and Stroke Size Slider
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
-                    .align(androidx.compose.ui.Alignment.BottomCenter),
+                    .align(Alignment.BottomCenter),
                 verticalArrangement = Arrangement.Bottom
             ) {
-                // In your Row of buttons, replace the existing buttons with:
+                // 7. Buttons Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
@@ -97,70 +96,11 @@ fun DrawingScreen(navController: NavController) {
                         Text("Clear")
                     }
 
+                    // 8. Save Button
                     Button(
                         onClick = {
-                            scope.launch {
-                                isSaving = true
-                                try {
-                                    // Get the actual dimensions of your drawing area
-                                    val displayMetrics = context.resources.displayMetrics
-                                    val width = displayMetrics.widthPixels
-                                    val height = displayMetrics.heightPixels
-
-                                    // Create a bitmap with proper dimensions
-                                    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-                                    val canvas = Canvas(bitmap)
-
-                                    // Create and measure the ComposeView
-                                    val composableView = ComposeView(context).apply {
-                                        layoutParams = ViewGroup.LayoutParams(width, height)
-                                        setContent {
-                                            OverlayView(
-                                                modifier = Modifier.size(width.dp, height.dp),
-                                                resultBundle = resultBundle,
-                                                onClear = { clearOverlay = false },
-                                                clearOverlay = false,
-                                                drawingColor = drawingColor,
-                                                strokeSize = strokeSize
-                                            )
-                                        }
-                                        measure(
-                                            View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
-                                            View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY)
-                                        )
-                                        layout(0, 0, width, height)
-                                    }
-
-                                    // Draw the view onto the canvas
-                                    composableView.draw(canvas)
-
-                                    // Rest of your saving code...
-                                    val drawingId = UUID.randomUUID().toString()
-                                    val storageRef = storage.reference
-                                        .child("drawings/${Firebase.auth.currentUser?.uid}/$drawingId.png")
-
-                                    val baos = ByteArrayOutputStream()
-                                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos)
-                                    val data = baos.toByteArray()
-
-                                    storageRef.putBytes(data).await()
-
-                                    FirebaseManager.saveDrawing(
-                                        bitmap = bitmap,
-                                        color = drawingColor.toString(),
-                                        strokeSize = strokeSize
-                                    ).onSuccess {
-                                        Toast.makeText(context, "Drawing saved successfully!", Toast.LENGTH_SHORT).show()
-                                        navController.navigate(Screen.GALLERY)
-                                    }.onFailure { e ->
-                                        Toast.makeText(context, "Failed to save drawing: ${e.message}", Toast.LENGTH_SHORT).show()
-                                    }
-                                } catch (e: Exception) {
-                                    Toast.makeText(context, "Failed to capture drawing: ${e.message}", Toast.LENGTH_SHORT).show()
-                                } finally {
-                                    isSaving = false
-                                }
-                            }
+                            isSaving = true
+                            save = true
                         },
                         enabled = !isSaving
                     ) {
@@ -174,21 +114,17 @@ fun DrawingScreen(navController: NavController) {
                         }
                     }
 
-                    Button(onClick = { /* Handle Share Action */ }) {
-                        Text("Share")
-                    }
-
                     Button(onClick = {
                         navController.navigate(Screen.HOME)
                     }) {
                         Text("Home")
                     }
                 }
-                }
+                // 9. Color Selector
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text("Color: ", modifier = Modifier.weight(0.2f))
                     ColorSelector(
@@ -196,10 +132,11 @@ fun DrawingScreen(navController: NavController) {
                         modifier = Modifier.weight(0.8f)
                     )
                 }
+                // 10. Stroke Size Slider
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text("Stroke Size: ", modifier = Modifier.weight(0.4f))
                     Slider(
@@ -211,8 +148,13 @@ fun DrawingScreen(navController: NavController) {
                 }
             }
         }
+    } else {
+        // Permission is not granted, request it
+        LaunchedEffect(Unit) {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
 }
-
 
 @Composable
 fun ColorSelector(onColorSelected: (Color) -> Unit, modifier: Modifier = Modifier) {

@@ -1,10 +1,6 @@
 import com.android.build.gradle.internal.tasks.factory.dependsOn
 import de.undercouch.gradle.tasks.download.Download
 
-
-
-
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -44,6 +40,7 @@ android {
         jvmTarget = "11"
     }
     buildFeatures {
+        buildConfig = true
         compose = true
     }
 
@@ -72,6 +69,11 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.firebase:firebase-appcheck-ktx")
+    debugImplementation("com.google.firebase:firebase-appcheck-debug")
+    // If you choose to use Play Integrity
+    implementation("com.google.firebase:firebase-appcheck-playintegrity")
+
 //    implementation("com.google.firebase:firebase-common-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")

@@ -1,10 +1,12 @@
 package com.example.maccappproject.components
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -12,7 +14,10 @@ import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.drawToBitmap
 import com.example.maccappproject.helpers.HandLandmarkerHelper
+import kotlinx.coroutines.launch
 import kotlin.math.max
 
 @Composable
@@ -22,7 +27,9 @@ fun OverlayView(
     onClear: () -> Unit = {},
     clearOverlay: Boolean = false,
     drawingColor: Color = Color.Yellow,
-    strokeSize: Float = 8f
+    strokeSize: Float = 8f,
+    save: Boolean = false,
+    onSaveComplete: () -> Unit = {}
 ) {
     val pointPaint = remember(drawingColor, strokeSize) {
         Paint().apply {
@@ -35,7 +42,8 @@ fun OverlayView(
 
     // Use remember to create a list that persists across recompositions
     val pointList = remember { mutableStateListOf<Offset>() }
-
+    val scope = rememberCoroutineScope()
+    val view = LocalView.current
     // Function to clear the list
     fun clearPoints() {
         pointList.clear()
@@ -46,6 +54,24 @@ fun OverlayView(
     LaunchedEffect(clearOverlay) {
         if (clearOverlay) {
             clearPoints()
+        }
+    }
+
+    // Use LaunchedEffect to observe save and save the drawing
+    LaunchedEffect(save) {
+        if (save) {
+            val bitmap = view.drawToBitmap(Bitmap.Config.ARGB_8888)
+            scope.launch {
+                FirebaseManager.saveDrawing(
+                    bitmap = bitmap,
+                    color = drawingColor.toString(),
+                    strokeSize = strokeSize
+                ).onSuccess {
+                    onSaveComplete()
+                }.onFailure {
+                    // Handle failure
+                }
+            }
         }
     }
 
