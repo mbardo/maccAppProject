@@ -102,11 +102,21 @@ fun DrawingScreen(navController: NavController) {
                             scope.launch {
                                 isSaving = true
                                 try {
-                                    // Capture the current drawing
+                                    // Get the actual dimensions of your drawing area
+                                    val displayMetrics = context.resources.displayMetrics
+                                    val width = displayMetrics.widthPixels
+                                    val height = displayMetrics.heightPixels
+
+                                    // Create a bitmap with proper dimensions
+                                    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                                    val canvas = Canvas(bitmap)
+
+                                    // Create and measure the ComposeView
                                     val composableView = ComposeView(context).apply {
+                                        layoutParams = ViewGroup.LayoutParams(width, height)
                                         setContent {
                                             OverlayView(
-                                                modifier = Modifier.fillMaxSize(),
+                                                modifier = Modifier.size(width.dp, height.dp),
                                                 resultBundle = resultBundle,
                                                 onClear = { clearOverlay = false },
                                                 clearOverlay = false,
@@ -114,16 +124,26 @@ fun DrawingScreen(navController: NavController) {
                                                 strokeSize = strokeSize
                                             )
                                         }
+                                        measure(
+                                            View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                                            View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY)
+                                        )
+                                        layout(0, 0, width, height)
                                     }
 
-                                    // Convert drawing to bitmap
-                                    val bitmap = Bitmap.createBitmap(
-                                        composableView.width,
-                                        composableView.height,
-                                        Bitmap.Config.ARGB_8888
-                                    )
-                                    val canvas = Canvas(bitmap)
+                                    // Draw the view onto the canvas
                                     composableView.draw(canvas)
+
+                                    // Rest of your saving code...
+                                    val drawingId = UUID.randomUUID().toString()
+                                    val storageRef = storage.reference
+                                        .child("drawings/${Firebase.auth.currentUser?.uid}/$drawingId.png")
+
+                                    val baos = ByteArrayOutputStream()
+                                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos)
+                                    val data = baos.toByteArray()
+
+                                    storageRef.putBytes(data).await()
 
                                     FirebaseManager.saveDrawing(
                                         bitmap = bitmap,
