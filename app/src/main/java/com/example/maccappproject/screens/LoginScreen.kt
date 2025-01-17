@@ -24,75 +24,89 @@ fun LoginScreen(navController: NavController) {
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     val context = LocalContext.current
-    val scope = rememberCoroutineScope() // Create a coroutine scope
+    val scope = rememberCoroutineScope()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "Welcome Back",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 32.dp)
-        )
-
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Email") },
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Email
-            )
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Password") },
-            modifier = Modifier.fillMaxWidth(),
-            visualTransformation = PasswordVisualTransformation()
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Button(
-            onClick = {
-                isLoading = true
-                scope.launch { // Launch a coroutine
-                    // Use FirebaseManager to sign in
-                    FirebaseManager.signIn(email, password)
-                        .onSuccess {
-                            isLoading = false
-                            navController.navigate(Screen.HOME) {
-                                popUpTo(Screen.LOGIN) { inclusive = true }
-                            }
-                        }
-                        .onFailure { exception ->
-                            isLoading = false
-                            Toast.makeText(
-                                context,
-                                "Login failed: ${exception.message}",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
+    Scaffold { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 32.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Welcome Back",
+                        style = MaterialTheme.typography.headlineMedium,
+                    )
                 }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !isLoading
-        ) {
-            Text("Login")
-        }
+            }
 
-        TextButton(
-            onClick = { navController.navigate(Screen.SIGNUP) }
-        ) {
-            Text("Don't have an account? Sign Up")
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Email") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email
+                )
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("Password") },
+                modifier = Modifier.fillMaxWidth(),
+                visualTransformation = PasswordVisualTransformation()
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick = {
+                    isLoading = true
+                    scope.launch {
+                        FirebaseManager.signIn(email, password)
+                            .onSuccess {
+                                isLoading = false
+                                navController.navigate(Screen.HOME) {
+                                    popUpTo(Screen.LOGIN) { inclusive = true }
+                                }
+                            }
+                            .onFailure { exception ->
+                                isLoading = false
+                                Toast.makeText(
+                                    context,
+                                    "Login failed: ${exception.message}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading
+            ) {
+                Text("Login")
+            }
+
+            TextButton(
+                onClick = { navController.navigate(Screen.SIGNUP) }
+            ) {
+                Text("Don't have an account? Sign Up")
+            }
         }
     }
 }

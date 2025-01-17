@@ -142,7 +142,7 @@ fun HomeScreen(navController: NavHostController) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            "Recent Drawings",
+                            "Most Recent Drawing",
                             style = MaterialTheme.typography.titleMedium
                         )
                         TextButton(onClick = { navController.navigate(Screen.GALLERY) }) {
@@ -157,7 +157,7 @@ fun HomeScreen(navController: NavHostController) {
                                 .data(recentDrawingUrl)
                                 .crossfade(true)
                                 .build(),
-                            contentDescription = "Recent Drawing",
+                            contentDescription = "Most Recent Drawing",
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(200.dp),

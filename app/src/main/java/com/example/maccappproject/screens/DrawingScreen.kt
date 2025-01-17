@@ -6,8 +6,9 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,6 +28,7 @@ import com.example.maccappproject.navigation.Screen
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DrawingScreen(navController: NavController) {
     // 1. State Variables
@@ -51,98 +53,119 @@ fun DrawingScreen(navController: NavController) {
 
     // 3. Camera Permission Check and UI Setup
     if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            // 4. Camera View
-            CameraView(
-                modifier = Modifier.fillMaxSize(),
-                onHandLandmark = {
-                    resultBundle = it
-                }
-            )
-            // 5. Overlay View with Size Tracking
-            OverlayView(
-                modifier = Modifier.fillMaxSize(),
-                resultBundle = resultBundle,
-                onClear = { clearOverlay = false },
-                clearOverlay = clearOverlay,
-                drawingColor = drawingColor,
-                strokeSize = strokeSize,
-                save = save,
-                onSaveComplete = {
-                    scope.launch {
+        Scaffold(
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = { Text("Drawing") },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.navigate(Screen.HOME) }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back to Home")
+                        }
+                    }
+                )
+            }
+        ) { paddingValues ->
+            Box(modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)) {
+                // 4. Camera View
+                CameraView(
+                    modifier = Modifier.fillMaxSize(),
+                    onHandLandmark = {
+                        resultBundle = it
+                    }
+                )
+                // 5. Overlay View with Size Tracking
+                OverlayView(
+                    modifier = Modifier.fillMaxSize(),
+                    resultBundle = resultBundle,
+                    onClear = { clearOverlay = false },
+                    clearOverlay = clearOverlay,
+                    drawingColor = drawingColor,
+                    strokeSize = strokeSize,
+                    save = save,
+                    onSaveComplete = {
+                        scope.launch {
+                            isSaving = false
+                            save = false
+                            navController.navigate(Screen.GALLERY)
+                        }
+                    },
+                    onSaveFailed = { // Add the onSaveFailed callback
                         isSaving = false
                         save = false
-                        navController.navigate(Screen.GALLERY)
                     }
-                },
-                onSaveFailed = { // Add the onSaveFailed callback
-                    isSaving = false
-                    save = false
-                }
-            )
-            // 6. Bottom Controls, Color Selector and Stroke Size Slider
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                    .align(Alignment.BottomCenter),
-                verticalArrangement = Arrangement.Bottom
-            ) {
-                // 7. Buttons Row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                )
+                // 6. Bottom Controls, Color Selector and Stroke Size Slider
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .align(Alignment.BottomCenter)
                 ) {
-                    Button(onClick = {
-                        clearOverlay = true
-                    }) {
-                        Text("Clear")
-                    }
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.Bottom
+                    ) {
+                        // 7. Buttons Row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            Button(onClick = {
+                                clearOverlay = true
+                            }) {
+                                Text("Clear")
+                            }
 
-                    // 8. Save Button
-                    CustomSaveButton(
-                        isSaving = isSaving,
-                        onClick = {
-                            isSaving = true
-                            save = true
+                            // 8. Save Button
+                            CustomSaveButton(
+                                isSaving = isSaving,
+                                onClick = {
+                                    isSaving = true
+                                    save = true
+                                }
+                            )
+
+                            Button(onClick = {
+                                navController.navigate(Screen.HOME)
+                            }) {
+                                Text("Home")
+                            }
                         }
-                    )
-
-                    Button(onClick = {
-                        navController.navigate(Screen.HOME)
-                    }) {
-                        Text("Home")
+                        // 9. Color Selector
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = CenterVertically
+                        ) {
+                            Text(
+                                "Color: ",
+                                modifier = Modifier.weight(0.2f),
+                                color = Color.Black // Changed to black for better visibility on card
+                            )
+                            ColorSelector(
+                                onColorSelected = { drawingColor = it },
+                                modifier = Modifier.weight(0.8f)
+                            )
+                        }
+                        // 10. Stroke Size Slider
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = CenterVertically
+                        ) {
+                            Text("Stroke Size: ", modifier = Modifier.weight(0.4f), color = Color.Black) // Changed to black for better visibility on card
+                            Slider(
+                                value = strokeSize,
+                                onValueChange = { strokeSize = it },
+                                valueRange = 1f..30f,
+                                modifier = Modifier.weight(0.6f)
+                            )
+                        }
                     }
-                }
-                // 9. Color Selector
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = CenterVertically
-                ) {
-                    Text(
-                        "Color: ",
-                        modifier = Modifier.weight(0.2f),
-                        color = Color.White
-                    )
-                    ColorSelector(
-                        onColorSelected = { drawingColor = it },
-                        modifier = Modifier.weight(0.8f)
-                    )
-                }
-                // 10. Stroke Size Slider
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = CenterVertically
-                ) {
-                    Text("Stroke Size: ", modifier = Modifier.weight(0.4f), color = Color.White)
-                    Slider(
-                        value = strokeSize,
-                        onValueChange = { strokeSize = it },
-                        valueRange = 1f..30f,
-                        modifier = Modifier.weight(0.6f)
-                    )
                 }
             }
         }
@@ -171,7 +194,7 @@ fun ColorSelector(onColorSelected: (Color) -> Unit, modifier: Modifier = Modifie
             Button(
                 onClick = { onColorSelected(color) },
                 modifier = Modifier.size(30.dp),
-                colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = color)
+                colors = ButtonDefaults.buttonColors(containerColor = color)
             ) {}
         }
     }
@@ -186,6 +209,6 @@ fun CustomSaveButton(
         onClick = onClick,
         enabled = !isSaving
     ) {
-        Text(if (isSaving) "Saving..." else "Save", color = Color.White)
+        Text(if (isSaving) "Saving..." else "Save")
     }
 }

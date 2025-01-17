@@ -6,6 +6,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -17,8 +18,6 @@ import com.example.maccappproject.navigation.Screen
 import com.example.maccappproject.utils.FirebaseManager
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-
 
 @Composable
 fun SignupScreen(navController: NavController) {
@@ -30,126 +29,141 @@ fun SignupScreen(navController: NavController) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "Create Account",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 32.dp)
-        )
-
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Email") },
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Email
-            )
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Password") },
-            modifier = Modifier.fillMaxWidth(),
-            visualTransformation = PasswordVisualTransformation()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = confirmPassword,
-            onValueChange = { confirmPassword = it },
-            label = { Text("Confirm Password") },
-            modifier = Modifier.fillMaxWidth(),
-            visualTransformation = PasswordVisualTransformation(),
-            isError = password != confirmPassword && confirmPassword.isNotEmpty()
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Show error message if passwords don't match
-        if (password != confirmPassword && confirmPassword.isNotEmpty()) {
-            Text(
-                text = "Passwords don't match",
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.align(Alignment.Start)
-            )
-        }
-
-        // Show any other error messages
-        errorMessage?.let { error ->
-            Text(
-                text = error,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.align(Alignment.Start)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Button(
-            onClick = {
-                if (password != confirmPassword) {
-                    errorMessage = "Passwords don't match"
-                    return@Button
-                }
-                if (password.length < 6) {
-                    errorMessage = "Password must be at least 6 characters"
-                    return@Button
-                }
-
-                isLoading = true
-                errorMessage = null
-
-                scope.launch {
-                    FirebaseManager.signUp(email, password)
-                        .onSuccess {
-                            isLoading = false
-                            navController.navigate(Screen.HOME) {
-                                popUpTo(Screen.LOGIN) { inclusive = true }
-                            }
-                        }
-                        .onFailure { exception ->
-                            isLoading = false
-                            errorMessage = exception.message ?: "Sign up failed"
-                            Toast.makeText(
-                                context,
-                                "Sign up failed: ${exception.message}",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = !isLoading && email.isNotEmpty() && password.isNotEmpty() && confirmPassword.isNotEmpty()
+    Scaffold { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-            } else {
-                Text("Sign Up")
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 32.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Create Account",
+                        style = MaterialTheme.typography.headlineMedium,
+                    )
+                }
             }
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Email") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email
+                )
+            )
 
-        TextButton(
-            onClick = { navController.popBackStack() }
-        ) {
-            Text("Already have an account? Log in")
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("Password") },
+                modifier = Modifier.fillMaxWidth(),
+                visualTransformation = PasswordVisualTransformation()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = confirmPassword,
+                onValueChange = { confirmPassword = it },
+                label = { Text("Confirm Password") },
+                modifier = Modifier.fillMaxWidth(),
+                visualTransformation = PasswordVisualTransformation(),
+                isError = password != confirmPassword && confirmPassword.isNotEmpty()
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Show error message if passwords don't match
+            if (password != confirmPassword && confirmPassword.isNotEmpty()) {
+                Text(
+                    text = "Passwords don't match",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+            }
+
+            // Show any other error messages
+            errorMessage?.let { error ->
+                Text(
+                    text = error,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick = {
+                    if (password != confirmPassword) {
+                        errorMessage = "Passwords don't match"
+                        return@Button
+                    }
+                    if (password.length < 6) {
+                        errorMessage = "Password must be at least 6 characters"
+                        return@Button
+                    }
+
+                    isLoading = true
+                    errorMessage = null
+
+                    scope.launch {
+                        FirebaseManager.signUp(email, password)
+                            .onSuccess {
+                                isLoading = false
+                                navController.navigate(Screen.HOME) {
+                                    popUpTo(Screen.LOGIN) { inclusive = true }
+                                }
+                            }
+                            .onFailure { exception ->
+                                isLoading = false
+                                errorMessage = exception.message ?: "Sign up failed"
+                                Toast.makeText(
+                                    context,
+                                    "Sign up failed: ${exception.message}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isLoading && email.isNotEmpty() && password.isNotEmpty() && confirmPassword.isNotEmpty()
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text("Sign Up")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            TextButton(
+                onClick = { navController.popBackStack() }
+            ) {
+                Text("Already have an account? Log in")
+            }
         }
     }
 }
