@@ -18,10 +18,10 @@ This Android application, developed by Matthias Bardonnet and Nabil Taha Yassine
 -   **Android Studio:** The primary IDE for developing the Android application.
 -   **Kotlin:** The programming language used for the application's logic and UI.
 -   **Jetpack Compose:** The modern UI toolkit for building native Android UIs.
--   **MediaPipe:** Google's framework for building multimodal applied AI pipelines. Specifically, the hand landmark detection model is used.
+-   **MediaPipe:** Google's framework for building multimodal applied AI pipelines. Specifically, the hand landmark detection model is used. **(Apache License 2.0)**
 -   **Firebase:** Google's mobile development platform used for:
     -   **Authentication:** Managing user accounts (login, signup, logout).
-    -   **Firestore:** Storing and retrieving user drawings.
+    -   **Firestore:** Storing and retrieving user drawings. **(Firebase SDKs are under Apache License 2.0, Firebase services are subject to Google's Terms of Service)**
 -   **Coil:** An image loading library for Android backed by Kotlin Coroutines.
 
 ## Project Structure
@@ -62,7 +62,8 @@ The project is structured as a standard Android Studio project with the followin
 
 ## License
 
-This project is licensed under the [Specify License if any].
+The MediaPipe library is licensed under the Apache License 2.0.
+The Firebase SDKs are licensed under the Apache License 2.0.
 
 ## Disclaimer
 
