@@ -1,26 +1,45 @@
 package com.example.maccappproject.screens
 
-// app/src/main/java/com.example.maccappproject/screens/HomeScreen.kt
-
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
 import com.example.maccappproject.navigation.Screen
+import com.example.maccappproject.utils.FirebaseManager
+import kotlinx.coroutines.launch
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavHostController) {
-    val auth = Firebase.auth
-    val currentUser = auth.currentUser
+    val currentUser = FirebaseManager.getCurrentUser()
+    var recentDrawingUrl by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        scope.launch {
+            FirebaseManager.getDrawings()
+                .onSuccess { drawings ->
+                    recentDrawingUrl = drawings.firstOrNull()?.url
+                }
+                .onFailure { exception ->
+                    // Handle error, e.g., show a toast
+                    println("Error getting drawings: ${exception.message}")
+                }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -131,12 +150,26 @@ fun HomeScreen(navController: NavHostController) {
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    // Placeholder for recent drawings
-                    Text(
-                        "Start creating your first drawing!",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    // Display the most recent drawing or a placeholder
+                    if (recentDrawingUrl != null) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(recentDrawingUrl)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = "Recent Drawing",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp),
+                            contentScale = ContentScale.Fit
+                        )
+                    } else {
+                        Text(
+                            "Start creating your first drawing!",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
 
@@ -145,7 +178,7 @@ fun HomeScreen(navController: NavHostController) {
             // Sign Out Button
             OutlinedButton(
                 onClick = {
-                    auth.signOut()
+                    FirebaseManager.signOut()
                     navController.navigate(Screen.LOGIN) {
                         popUpTo(0) { inclusive = true }
                     }

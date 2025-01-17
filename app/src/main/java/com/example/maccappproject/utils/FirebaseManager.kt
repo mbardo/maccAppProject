@@ -1,6 +1,9 @@
-// app/src/main/java/com.example.maccappproject/utils/FirebaseManager.kt
+package com.example.maccappproject.utils
 
+import android.annotation.SuppressLint
 import android.graphics.Bitmap
+import android.util.Log
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.Query
@@ -12,8 +15,10 @@ import java.io.ByteArrayOutputStream
 import java.util.UUID
 
 object FirebaseManager {
+    private const val TAG = "FirebaseManager"
     private val auth = Firebase.auth
     private val storage = Firebase.storage.reference
+    @SuppressLint("StaticFieldLeak")
     private val firestore = Firebase.firestore
 
     // Auth functions
@@ -21,31 +26,43 @@ object FirebaseManager {
 
     suspend fun signIn(email: String, password: String): Result<FirebaseUser> {
         return try {
+            Log.d(TAG, "signIn: Attempting sign in with email: $email")
             val result = auth.signInWithEmailAndPassword(email, password).await()
             result.user?.let {
+                Log.d(TAG, "signIn: Sign in successful for user: ${it.uid}")
                 Result.success(it)
-            } ?: Result.failure(Exception("Authentication failed"))
+            } ?: run {
+                Log.e(TAG, "signIn: Authentication failed")
+                Result.failure(Exception("Authentication failed"))
+            }
         } catch (e: Exception) {
+            Log.e(TAG, "signIn: Exception during sign in", e)
             Result.failure(e)
         }
     }
 
     suspend fun signUp(email: String, password: String): Result<FirebaseUser> {
         return try {
+            Log.d(TAG, "signUp: Attempting sign up with email: $email")
             val result = auth.createUserWithEmailAndPassword(email, password).await()
             result.user?.let {
+                Log.d(TAG, "signUp: Sign up successful for user: ${it.uid}")
                 Result.success(it)
-            } ?: Result.failure(Exception("Sign up failed"))
+            } ?: run {
+                Log.e(TAG, "signUp: Sign up failed")
+                Result.failure(Exception("Sign up failed"))
+            }
         } catch (e: Exception) {
+            Log.e(TAG, "signUp: Exception during sign up", e)
             Result.failure(e)
         }
     }
 
     fun signOut() {
+        Log.d(TAG, "signOut: User signed out")
         auth.signOut()
     }
 
-    // Drawing functions
     suspend fun saveDrawing(
         bitmap: Bitmap,
         color: String,
@@ -70,7 +87,7 @@ object FirebaseManager {
                 "userId" to currentUser,
                 "drawingId" to drawingId,
                 "url" to downloadUrl.toString(),
-                "createdAt" to com.google.firebase.Timestamp.now(),
+                "createdAt" to Timestamp.now(),
                 "color" to color,
                 "strokeSize" to strokeSize
             )
@@ -89,12 +106,14 @@ object FirebaseManager {
     suspend fun getDrawings(): Result<List<Drawing>> {
         return try {
             val currentUser = getCurrentUser()?.uid ?: throw Exception("User not authenticated")
+            Log.d(TAG, "getDrawings: Getting drawings for user: $currentUser")
 
             val snapshot = firestore.collection("drawings")
                 .whereEqualTo("userId", currentUser)
                 .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get()
                 .await()
+            Log.d(TAG, "getDrawings: Firestore snapshot retrieved")
 
             val drawings = snapshot.documents.mapNotNull { doc ->
                 Drawing(
@@ -103,14 +122,16 @@ object FirebaseManager {
                     drawingId = doc.getString("drawingId") ?: "",
                     url = doc.getString("url") ?: "",
                     createdAt = doc.getTimestamp("createdAt")
-                        ?: com.google.firebase.Timestamp.now(),
+                        ?: Timestamp.now(),
                     color = doc.getString("color") ?: "",
                     strokeSize = doc.getDouble("strokeSize")?.toFloat() ?: 8f
                 )
             }
+            Log.d(TAG, "getDrawings: Drawings mapped successfully, count: ${drawings.size}")
 
             Result.success(drawings)
         } catch (e: Exception) {
+            Log.e(TAG, "getDrawings: Exception during get drawings", e)
             Result.failure(e)
         }
     }
@@ -118,30 +139,34 @@ object FirebaseManager {
     suspend fun deleteDrawing(drawingId: String): Result<Unit> {
         return try {
             val currentUser = getCurrentUser()?.uid ?: throw Exception("User not authenticated")
+            Log.d(TAG, "deleteDrawing: Deleting drawing with ID: $drawingId for user: $currentUser")
 
             // Delete from Storage
             storage.child("drawings/$currentUser/$drawingId.png").delete().await()
+            Log.d(TAG, "deleteDrawing: Image deleted from storage")
 
             // Delete from Firestore
             firestore.collection("drawings")
                 .document(drawingId)
                 .delete()
                 .await()
+            Log.d(TAG, "deleteDrawing: Metadata deleted from Firestore")
 
+            Log.d(TAG, "deleteDrawing: com.example.maccappproject.utils.Drawing deleted successfully")
             Result.success(Unit)
         } catch (e: Exception) {
+            Log.e(TAG, "deleteDrawing: Exception during delete drawing", e)
             Result.failure(e)
         }
     }
 }
 
-// Data class for Drawing
 data class Drawing(
     val id: String = "",
     val userId: String = "",
     val drawingId: String = "",
     val url: String = "",
-    val createdAt: com.google.firebase.Timestamp = com.google.firebase.Timestamp.now(),
+    val createdAt: Timestamp = Timestamp.now(),
     val color: String = "",
     val strokeSize: Float = 8f
 )

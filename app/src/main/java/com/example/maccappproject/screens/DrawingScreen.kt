@@ -22,11 +22,10 @@ import androidx.compose.material3.Slider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Alignment
 import com.example.maccappproject.navigation.Screen
 import kotlinx.coroutines.launch
+import androidx.compose.ui.Alignment.Companion.CenterVertically
 
 @Composable
 fun DrawingScreen(navController: NavController) {
@@ -75,6 +74,10 @@ fun DrawingScreen(navController: NavController) {
                         save = false
                         navController.navigate(Screen.GALLERY)
                     }
+                },
+                onSaveFailed = { // Add the onSaveFailed callback
+                    isSaving = false
+                    save = false
                 }
             )
             // 6. Bottom Controls, Color Selector and Stroke Size Slider
@@ -97,22 +100,13 @@ fun DrawingScreen(navController: NavController) {
                     }
 
                     // 8. Save Button
-                    Button(
+                    CustomSaveButton(
+                        isSaving = isSaving,
                         onClick = {
                             isSaving = true
                             save = true
-                        },
-                        enabled = !isSaving
-                    ) {
-                        if (isSaving) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
-                        } else {
-                            Text("Save")
                         }
-                    }
+                    )
 
                     Button(onClick = {
                         navController.navigate(Screen.HOME)
@@ -124,9 +118,13 @@ fun DrawingScreen(navController: NavController) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = CenterVertically
                 ) {
-                    Text("Color: ", modifier = Modifier.weight(0.2f))
+                    Text(
+                        "Color: ",
+                        modifier = Modifier.weight(0.2f),
+                        color = Color.White
+                    )
                     ColorSelector(
                         onColorSelected = { drawingColor = it },
                         modifier = Modifier.weight(0.8f)
@@ -136,9 +134,9 @@ fun DrawingScreen(navController: NavController) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = CenterVertically
                 ) {
-                    Text("Stroke Size: ", modifier = Modifier.weight(0.4f))
+                    Text("Stroke Size: ", modifier = Modifier.weight(0.4f), color = Color.White)
                     Slider(
                         value = strokeSize,
                         onValueChange = { strokeSize = it },
@@ -176,5 +174,18 @@ fun ColorSelector(onColorSelected: (Color) -> Unit, modifier: Modifier = Modifie
                 colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = color)
             ) {}
         }
+    }
+}
+
+@Composable
+fun CustomSaveButton(
+    isSaving: Boolean,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        enabled = !isSaving
+    ) {
+        Text(if (isSaving) "Saving..." else "Save", color = Color.White)
     }
 }

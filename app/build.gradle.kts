@@ -69,17 +69,12 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
-    implementation("com.google.firebase:firebase-appcheck-ktx")
-    debugImplementation("com.google.firebase:firebase-appcheck-debug")
-    // If you choose to use Play Integrity
-    implementation("com.google.firebase:firebase-appcheck-playintegrity")
-
-//    implementation("com.google.firebase:firebase-common-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
 
     // Material Design
     implementation("com.google.android.material:material:1.11.0")
+    implementation("io.coil-kt:coil-compose:2.5.0")
 
     // Navigation Components
     implementation("androidx.navigation:navigation-fragment-ktx:2.7.6")
@@ -93,7 +88,6 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-//    implementation(libs.firebase.storage.ktx)
     testImplementation(libs.junit)
     implementation(libs.androidx.navigation.compose)
 
@@ -122,6 +116,4 @@ dependencies {
     // Debug dependencies
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    
-    
 }

@@ -1,6 +1,7 @@
 package com.example.maccappproject.components
 
 import android.graphics.Bitmap
+import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -17,6 +18,7 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.drawToBitmap
 import com.example.maccappproject.helpers.HandLandmarkerHelper
+import com.example.maccappproject.utils.FirebaseManager
 import kotlinx.coroutines.launch
 import kotlin.math.max
 
@@ -29,7 +31,8 @@ fun OverlayView(
     drawingColor: Color = Color.Yellow,
     strokeSize: Float = 8f,
     save: Boolean = false,
-    onSaveComplete: () -> Unit = {}
+    onSaveComplete: () -> Unit = {},
+    onSaveFailed: () -> Unit = {}
 ) {
     val pointPaint = remember(drawingColor, strokeSize) {
         Paint().apply {
@@ -44,14 +47,18 @@ fun OverlayView(
     val pointList = remember { mutableStateListOf<Offset>() }
     val scope = rememberCoroutineScope()
     val view = LocalView.current
+    val TAG = "OverlayView"
+
     // Function to clear the list
     fun clearPoints() {
+        Log.d(TAG, "clearPoints called")
         pointList.clear()
         onClear() // Invoke the callback
     }
 
     // Use LaunchedEffect to observe clearOverlay and clear the list
     LaunchedEffect(clearOverlay) {
+        Log.d(TAG, "LaunchedEffect(clearOverlay) triggered, clearOverlay = $clearOverlay")
         if (clearOverlay) {
             clearPoints()
         }
@@ -59,17 +66,26 @@ fun OverlayView(
 
     // Use LaunchedEffect to observe save and save the drawing
     LaunchedEffect(save) {
+        Log.d(TAG, "LaunchedEffect(save) triggered, save = $save")
         if (save) {
+            Log.d(TAG, "Saving drawing...")
             val bitmap = view.drawToBitmap(Bitmap.Config.ARGB_8888)
+            Log.d(TAG, "Bitmap created")
             scope.launch {
-                FirebaseManager.saveDrawing(
+                Log.d(TAG, "Coroutine launched to save drawing")
+                Log.d(TAG, "Before FirebaseManager.saveDrawing")
+                val result = FirebaseManager.saveDrawing(
                     bitmap = bitmap,
                     color = drawingColor.toString(),
                     strokeSize = strokeSize
-                ).onSuccess {
+                )
+                Log.d(TAG, "After FirebaseManager.saveDrawing, result: $result")
+                result.onSuccess { drawingId ->
+                    Log.d(TAG, "Drawing saved successfully, drawingId: $drawingId")
                     onSaveComplete()
-                }.onFailure {
-                    // Handle failure
+                }.onFailure { exception ->
+                    Log.e(TAG, "Failed to save drawing", exception)
+                    onSaveFailed()
                 }
             }
         }
