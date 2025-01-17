@@ -30,7 +30,7 @@ The project is structured as a standard Android Studio project with the followin
 
 -   **`app/`:** Contains the main application code.
     -   **`java/com/example/maccappproject/`:** Contains the Kotlin source code.
-        -   **`components/`:** Contains reusable UI components like `CameraView`, `OverlayView`, and `DrawingCanvas`.
+        -   **`components/`:** Contains reusable UI components like `CameraView` and `OverlayView`.
         -   **`helpers/`:** Contains helper classes for MediaPipe integration, such as `HandLandmarkerHelper`.
         -   **`navigation/`:** Contains navigation logic using Jetpack Navigation.
         -   **`screens/`:** Contains the composable functions for each screen of the application (e.g., `HomeScreen`, `DrawingScreen`, `LoginScreen`).
